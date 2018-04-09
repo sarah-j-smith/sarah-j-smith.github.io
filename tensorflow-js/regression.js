@@ -1,13 +1,13 @@
 //  http://tylervigen.com/page?page=1
 
-let years = [ 2000,	2001,	2002,	2003,	2004,	2005,	2006,	2007,	2008,	2009 ];
+let years = [ 10,	20,	30,	40,	50,	60,	70,	80,	90, 100 ];
 
 //  Per capita consumption of cheese (US)  Pounds (USDA)  
 let cheese_eating = [29.8, 30.1, 30.5, 30.6, 31.3, 31.7, 32.6, 33.1, 32.7, 32.8];
 
 //  Number of people who died by becoming tangled in their bedsheets
-// Deaths (US) (CDC)	
-let bed_sheet_entanglement_deaths = [327, 456, 509, 497, 596, 573, 661, 741, 809, 717];
+// Deaths (US) (CDC) tens of people, so 32.7 == 327.
+let bed_sheet_entanglement_deaths = [32.7, 45.6, 50.9, 49.7, 59.6, 57.3, 66.1, 74.1, 80.9, 71.7];
 
 var regression_guess = [ 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0 ];
 
@@ -15,9 +15,9 @@ function draw_graph() {
 
   var dataArray = [];
   var y;
-  for (y = 2000; y <= 2009; y++) {
-    let ix = y - 2000;
-    let newRow = [y.toString(), cheese_eating[ix], bed_sheet_entanglement_deaths[ix], regression_guess[ix]];
+  for (y = 0; y <= 9; y++) {
+    let year = y + 2000;
+    let newRow = [year.toString(), cheese_eating[y], bed_sheet_entanglement_deaths[y] * 10.0, regression_guess[y]];
     dataArray.push(newRow);
   }
   var data = new google.visualization.DataTable();
@@ -53,8 +53,16 @@ function draw_graph() {
   chart.draw(data, options);
 }
 
-function show_result(prediction) {
-  prediction.print();
+function draw_updated_graph(updated_data)
+{
+  regression_guess = updated_data;
+  console.log(updated_data);
+  draw_graph();
+}
+
+function show_result(prediction) 
+{
+  prediction.data().then(data => draw_updated_graph(data));
 }
 
 function do_regression() {
@@ -64,20 +72,22 @@ function do_regression() {
   model.add(tf.layers.dense({ units: 1, inputShape: [1] }));
 
   // Prepare the model for training: Specify the loss and the optimizer.
-  model.compile({ loss: 'meanSquaredError', optimizer: 'sgd' });
+  const learningRate = 0.02;
+const optimizer = tf.train.sgd(learningRate);
+  model.compile({ loss: 'meanSquaredError', optimizer: optimizer });
 
   // Generate some synthetic data for training.
 
   const xs = tf.tensor2d(years, [10, 1]);
 
-  const ys = tf.tensor2d(bed_sheet_entanglement_deaths, [10, 1]);
-//  const ys = tf.tensor2d(cheese_eating, [10, 1]);
+//  const xs = tf.tensor2d(bed_sheet_entanglement_deaths, [10, 1]);
+  const ys = tf.tensor2d(cheese_eating, [10, 1]);
 
   // Train the model using the data.
   model.fit(xs, ys).then(() => {
     // Use the model to do inference on a data point the model hasn't seen before:
     let prediction = model.predict(tf.tensor2d(years, [10, 1]));
-    prediction.dataSync();
+    prediction.print();
     show_result(prediction);
   });
 }
